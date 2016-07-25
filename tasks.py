@@ -56,7 +56,7 @@ def botprogram():
 
     schedule.every().friday.at("8:00").do(postit,Resource) #Schedule library function to run postit function at friday at 10am (8am GMT). The Resource array is passed as a parameter to the postit function.
 
-    cur.execute('SELECT telegram_user_id__c, name FROM salesforce.resource__c') #Read resource information from Salesforce
+    cur.execute("SELECT telegram_user_id__c, name,test_resource__c FROM salesforce.resource__c WHERE test_resource__c = 'true'") #Read resource information from Salesforce
     rows = cur.fetchall()
     for row in rows:
         Resource.append(resource(row[0],row[1])) #Instantiating resource objects using the Salesforce data and appending these objects to the Resource array.
@@ -64,7 +64,7 @@ def botprogram():
 
     while True: #'Runtime infinite loop'
         while True: #'Receive message loop'
-            cur.execute('SELECT telegram_user_id__c, name FROM salesforce.resource__c') #Read resource information from Salesforce
+            cur.execute("SELECT telegram_user_id__c, name,test_resource__c FROM salesforce.resource__c WHERE test_resource__c = 'true'") #Read resource information from Salesforce
             rows = cur.fetchall()
             for row in rows: #loop through resources from Salesforce
                 found = 0

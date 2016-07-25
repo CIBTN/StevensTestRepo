@@ -19,7 +19,7 @@ def postit(Resource): #function which sends the first resource management questi
 
     for element in Resource: #loop through all resources in RAM
         post(element.user_id,"Hey! It's that time of the week again! Lets update your schedule:")
-        cur.execute("UPDATE salesforce.resource__c SET awaiting_schedule_response__c = 'true' WHERE telegram_user_id__c = '%s'" % (element.user_id))
+        cur.execute("UPDATE salesforce.resource__c SET awaiting_schedule_response__c = 'true' WHERE telegram_user_id__c = '%s' AND test_resource__c = 'true'" % (element.user_id))
         con.commit()
         keyb(element.user_id, "Are you on a billable project?",[["Yes"],["No"]])
     con.close()
