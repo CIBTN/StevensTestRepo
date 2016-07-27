@@ -119,6 +119,7 @@ def botprogram():
                     cur.execute("UPDATE salesforce.resource__c SET telegram_user_id__c = '%s' WHERE name = '%s'" % (user_id, name)) #update Salesforce to include the resource's telegram id on their record
                     con.commit() #commit the previous SQL query to the Postgres database
                     print 'from old user with no telegram id'
+                    print 'telegram id updated in Salesforce'
 
         if index == -1: #if the telegram user does not have an associated resource object in the Resource array, their index is defaulted to -1
             Resource.append(resource(user_id,name)) #a new resource object is created and appended to the Resource array
@@ -128,30 +129,40 @@ def botprogram():
             print 'from new user'
             print str('adding ' + str(Resource[index].name) + ' to RAM')
 
-        cur.execute("SELECT name, awaiting_schedule_response__c FROM salesforce.resource__c WHERE name = '%s'" % (Resource[index].name)) #Read the name and awaiting_schedule_response check box for the current telegram user from Salesforce
+        cur.execute("SELECT telegram_user_id__c, awaiting_schedule_response__c, on_project__c FROM salesforce.resource__c WHERE telegram_user_id__c = '%s'" % (Resource[index].user_id)) #Read the telegram_user_id, awaiting_schedule_response check box and on_project check box for the current telegram user from Salesforce
         query_result = cur.fetchone()
         try: #if there is no result (the telegram user was deleted off Salesforce at some point), this will cause an error
             if query_result[1] == True: #if the awaiting_schedule_response checkbox is checked
-                if Resource[index].phase == 0: #set the resource phase attribute to 0
+                if Resource[index].phase == 0: #if the resource phase attribute is 0
                     if text in ['Yes','No']: #if the telegram_response text is yes or no
-                        if text == 'No':
-                            keybHide(Resource[index].user_id,'Thank you for your time. Hopefully you will be billable next time we speak!')
-                            cur.execute("UPDATE salesforce.resource__c SET on_project__c = 'false', awaiting_schedule_response__c = 'false', engagement_roll_off_date__c = NULL, engagement__c = '' WHERE telegram_user_id__c = '%s'" % (user_id))
-                            con.commit()
+                        if query_result[2] == True: #if the user was on a project
+                            if text == 'Yes': #if the user is still on that project
+                                keybHide(Resource[index].user_id,'Thank you for your time. Keep up the good work!')
+                                cur.execute("UPDATE salesforce.resource__c SET awaiting_schedule_response__c = 'false' WHERE telegram_user_id__c = '%s'" % (user_id))
+                                con.commit()
+                            else: #if the user is no longer on that project
+                                keyb(element.user_id, "Are you on a billable project?",[["Yes"],["No"]])
+                                cur.execute("UPDATE salesforce.resource__c SET on_project__c = 'false', engagement_roll_off_date__c = NULL, engagement__c = '' WHERE telegram_user_id__c = '%s'" % (user_id)) #refresh resource object so that new scheduled data can be recorded
+                                con.commit()
                         else:
-                            cur.execute("UPDATE salesforce.resource__c SET on_project__c = 'true' WHERE telegram_user_id__c = '%s'" % (user_id))
-                            con.commit()
-                            ########################Processing the list of Engagements from Salesforce###########################
-                            Engagement_Names = []
-                            Engagement_Objects = []
-                            cur.execute("SELECT name, sfid, project_status__c FROM salesforce.engagement__c WHERE project_status__c = 'In Progress'")
-                            rows = cur.fetchall()
-                            for row in rows:
-                                Engagement_Names.append([row[0]])
-                                Engagement_Objects.append([row])
-                            keyb (Resource[index].user_id,"Which project are you currently on?", Engagement_Names)
-                            Resource[index].phase = 1 #set the resource phase attribute to 1 - next phase of the conversation
-                            ######################################################################################################
+                            if text == 'No':
+                                keybHide(Resource[index].user_id,'Thank you for your time. Hopefully you will be billable next time we speak!')
+                                cur.execute("UPDATE salesforce.resource__c SET on_project__c = 'false', awaiting_schedule_response__c = 'false', engagement_roll_off_date__c = NULL, engagement__c = '' WHERE telegram_user_id__c = '%s'" % (user_id))
+                                con.commit()
+                            else:
+                                cur.execute("UPDATE salesforce.resource__c SET on_project__c = 'true' WHERE telegram_user_id__c = '%s'" % (user_id))
+                                con.commit()
+                                ########################Processing the list of Engagements from Salesforce###########################
+                                Engagement_Names = []
+                                Engagement_Objects = []
+                                cur.execute("SELECT name, sfid, project_status__c FROM salesforce.engagement__c WHERE project_status__c = 'In Progress'")
+                                rows = cur.fetchall()
+                                for row in rows:
+                                    Engagement_Names.append([row[0]])
+                                    Engagement_Objects.append([row])
+                                keyb (Resource[index].user_id,"Which project are you currently on?", Engagement_Names)
+                                Resource[index].phase = 1 #set the resource phase attribute to 1 - next phase of the conversation
+                                ######################################################################################################
 
                     else: #if the telegram_response is not yes or no
                         post (Resource[index].user_id, 'Invalid response. Try again.')
