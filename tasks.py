@@ -54,7 +54,7 @@ def botprogram():
     cur = con.cursor()
     #####################################################################
 
-    schedule.every().thursday.at("11:48").do(postit,Resource) #Schedule library function to run postit function at friday at 10am (8am GMT). The Resource array is passed as a parameter to the postit function.
+    schedule.every().thursday.at("13:16").do(postit,Resource) #Schedule library function to run postit function at friday at 10am (8am GMT). The Resource array is passed as a parameter to the postit function.
 
     cur.execute("SELECT telegram_user_id__c, name,test_resource__c FROM salesforce.resource__c WHERE test_resource__c = 'true'") #Read resource information from Salesforce
     rows = cur.fetchall()
