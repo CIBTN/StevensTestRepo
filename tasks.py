@@ -54,7 +54,7 @@ def botprogram():
     cur = con.cursor()
     #####################################################################
 
-    schedule.every().thursday.at("13:24").do(postit,Resource) #Schedule library function to run postit function at friday at 10am (8am GMT). The Resource array is passed as a parameter to the postit function.
+    schedule.every().thursday.at("13:44").do(postit,Resource) #Schedule library function to run postit function at friday at 10am (8am GMT). The Resource array is passed as a parameter to the postit function.
 
     cur.execute("SELECT telegram_user_id__c, name,test_resource__c FROM salesforce.resource__c WHERE test_resource__c = 'true'") #Read resource information from Salesforce
     rows = cur.fetchall()
@@ -249,7 +249,7 @@ def botprogram():
                     cur.execute("INSERT INTO salesforce.new__c (New_Headline__c,News_Text__c) VALUES ('%s', '%s')" % (str('Unrecognised post by: ' + name),text.replace("'", "")))
                     con.commit()
                 else:
-                    post(Resource[index].user_id,"Your access to the DeloitteScheduleBot is waiting for approval. Once approved, you will be able to interact with this bot.")
+                    post(Resource[index].user_id,"Your access to the DeloitteScheduleBot is waiting for approval. Once approved, you will be able to interact with this bot. For now, you can enjoy some small talk with the bot.")
 
         except TypeError: #if an error is caused, delete the telegram user from the Resources object and then loop back to the 'Receive message loop'. Don't increment the offset variable so the previously received message is recieved again so that a new resource record can be created for the user in RAM and on Salesforce.
             print str(Resource[index].user_id + " " + Resource[index].name)
