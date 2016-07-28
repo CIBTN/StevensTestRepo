@@ -128,6 +128,7 @@ def botprogram():
                     try:
                         cur.execute("SELECT telegram_user_id__c FROM salesforce.resource__c WHERE telegram_user_id__c = '%s'" % (user_id))
                         query_result = cur.fetchone()
+                        print query_result
                         if query_result[0] == user_id:
                             Resource.append(resource(user_id,name))
                             index = len(Resource)-1
@@ -252,7 +253,7 @@ def botprogram():
                     cur.execute("INSERT INTO salesforce.new__c (New_Headline__c,News_Text__c) VALUES ('%s', '%s')" % (str('Unrecognised post by: ' + name),text.replace("'", "")))
                     con.commit()
                 else:
-                    post(Resource[index].user_id,"Access to the DeloitteScheduleBot is still in the approval process. Once it has been approved, you will be able to use this bot.")
+                    post(Resource[index].user_id,"Your access to the DeloitteScheduleBot is waiting for approval. Once approved, you will be able to interact with this bot.")
 
         except TypeError: #if an error is caused, delete the telegram user from the Resources object and then loop back to the 'Receive message loop'. Don't increment the offset variable so the previously received message is recieved again so that a new resource record can be created for the user in RAM and on Salesforce.
             print str(Resource[index].user_id + " " + Resource[index].name)
