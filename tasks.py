@@ -74,6 +74,7 @@ def botprogram():
                         if element.approved == 0:
                             element.approved = 1
                             print str (row[1] + ' has been approved on Salesforce')
+                            post(element.user_id,"Your access to DeloitteScheduleBot has been approved. You can now interact with the DeloitteScheduleBot!")
                 if found == 0: # if the resource was added on Salesforce but has not yet been added to the Resources array, add it to the Resources array.
                     Resource.append(resource(row[0],row[1]))
                     print str (row[1] + ' has been approved on Salesforce')
@@ -249,7 +250,7 @@ def botprogram():
                     cur.execute("INSERT INTO salesforce.new__c (New_Headline__c,News_Text__c) VALUES ('%s', '%s')" % (str('Unrecognised post by: ' + name),text.replace("'", "")))
                     con.commit()
                 else:
-                    post(Resource[index].user_id,"Your access to the DeloitteScheduleBot is waiting for approval. Once approved, you will be able to interact with this bot. For now, you can enjoy some small talk with the bot.")
+                    post(Resource[index].user_id,"Your access to the DeloitteScheduleBot is waiting for approval. Once approved, you will be able to interact with this bot. For now, you can enjoy some small talk with this bot.")
 
         except TypeError: #if an error is caused, delete the telegram user from the Resources object and then loop back to the 'Receive message loop'. Don't increment the offset variable so the previously received message is recieved again so that a new resource record can be created for the user in RAM and on Salesforce.
             print str(Resource[index].user_id + " " + Resource[index].name)
