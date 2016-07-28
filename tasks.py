@@ -128,8 +128,7 @@ def botprogram():
                     try:
                         cur.execute("SELECT telegram_user_id__c FROM salesforce.resource__c WHERE telegram_user_id__c = '%s'" % (user_id))
                         query_result = cur.fetchone()
-                        print query_result
-                        if query_result[0] == user_id:
+                        if query_result[0] == str(user_id):
                             Resource.append(resource(user_id,name))
                             index = len(Resource)-1
                             Resource[index].approved = 0
