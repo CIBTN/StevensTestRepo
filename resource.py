@@ -15,3 +15,4 @@ class resource:
          self.date = 0
          self.on_project = False
          self.project_name = ""
+         self.approved = 1

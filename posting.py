@@ -39,10 +39,11 @@ def postit(Resource): #function which sends the first resource management questi
 
     ########################Fast sending of messages to all resources######################
     for element in Resource: #loop through all resources in RAM
-        post(element.user_id,"Hey! It's that time of the week again! Lets update your schedule:")
-        if element.on_project == True: #if user is on a project
-            keyb(element.user_id, "Are you still on %s?" % (element.project_name),[["Yes"],["No"]])
-        else: 
-            keyb(element.user_id, "Are you on a billable project?",[["Yes"],["No"]])
+        if element.approved == 1:
+            post(element.user_id,"Hey! It's that time of the week again! Lets update your schedule:")
+            if element.on_project == True: #if user is on a project
+                keyb(element.user_id, "Are you still on %s?" % (element.project_name),[["Yes"],["No"]])
+            else:
+                keyb(element.user_id, "Are you on a billable project?",[["Yes"],["No"]])
     #######################################################################################
     con.close()

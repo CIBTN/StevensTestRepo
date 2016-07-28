@@ -69,10 +69,14 @@ def botprogram():
             for row in rows: #loop through resources from Salesforce
                 found = 0
                 for element in Resource: #loop through resources in the Resources array (RAM)
-                    if str(element.name) == str(row[1]): #if resource is in both Salesforce and the Resources array, do nothing.
+                    if str(element.user_id) == str(row[0]): #if resource is in both Salesforce and the Resources array, do nothing.
                         found = 1
+                        if element.approved == 0:
+                            element.approved = 1
+                            print str (row[1] + ' has been approved on Salesforce')
                 if found == 0: # if the resource was added on Salesforce but has not yet been added to the Resources array, add it to the Resources array.
                     Resource.append(resource(row[0],row[1]))
+                    print str (row[1] + ' has been approved on Salesforce')
                     print str('adding ' + row[1] + ' to RAM')
 
             schedule.run_pending() #Check to see if it is the right day and time for the Schedule library function to run the postit function
@@ -120,19 +124,34 @@ def botprogram():
                     con.commit() #commit the previous SQL query to the Postgres database
                     print 'from old user with no telegram id'
                     print 'telegram id updated in Salesforce'
+                else:
+                    try:
+                        cur.execute("SELECT telegram_user_id__c FROM salesforce.resource__c WHERE telegram_user_id__c = '%s'" % (user_id))
+                        query_result = cur.fetchone()
+                        if query_result == user_id:
+                            Resource.append(resource(user_id,name))
+                            index = len(Resource)-1
+                            Resource[index].approved = 0
+                            print 'from user who is on Salesforce but has not been approved yet'
+                            print str('adding ' + str(Resource[index].name) + ' to RAM')
+                    except TypeError:
+                        pass
+
 
         if index == -1: #if the telegram user does not have an associated resource object in the Resource array, their index is defaulted to -1
             Resource.append(resource(user_id,name)) #a new resource object is created and appended to the Resource array
             index = len(Resource)-1 #The index variable is set to the index of the new resource in the Resourece array
+            Resource[index].approved = 0
             cur.execute("INSERT INTO salesforce.resource__c (telegram_user_id__c,name,Employee_Status__c) VALUES ('%s', '%s','Active')" % (user_id, name)) #A new resource record is created on Salesforce
             con.commit()
             print 'from new user'
             print str('adding ' + str(Resource[index].name) + ' to RAM')
 
+
         cur.execute("SELECT telegram_user_id__c, awaiting_schedule_response__c, on_project__c FROM salesforce.resource__c WHERE telegram_user_id__c = '%s'" % (Resource[index].user_id)) #Read the telegram_user_id, awaiting_schedule_response check box and on_project check box for the current telegram user from Salesforce
         query_result = cur.fetchone()
         try: #if there is no result (the telegram user was deleted off Salesforce at some point), this will cause an error
-            if query_result[1] == True: #if the awaiting_schedule_response checkbox is checked
+            if query_result[1] == True and Resource[index].approved: #if the awaiting_schedule_response checkbox is checked
                 if Resource[index].phase == 0: #if the resource phase attribute is 0
                     if text in ['Yes','No']: #if the telegram_response text is yes or no
                         if query_result[2] == True: #if the user was on a project
@@ -213,7 +232,7 @@ def botprogram():
                 API_AI_Response = response.read() #read the contents of the response object
                 if '"intentName": "Greeting"' in API_AI_Response: #if the response contains the term 'greeting'
                         post(Resource[index].user_id,"Hello, I am DeloitteScheduleBot. I am currently still a noob as I've still got lots to learn. \n\nMy job is to help schedule resources. Ask me who is on the bench or who is on a project.")
-                elif '"intentName": "System Query"' in API_AI_Response: #if the response contains the term 'system query'
+                elif '"intentName": "System Query"' in API_AI_Response and Resource[index].approved: #if the response contains the term 'system query'
                     if '"SystemObject": "Bench"' in API_AI_Response: #if the response contains the term 'bench'
                         temp_string = "Here's a list of employees on the bench:\n\n"
                         cur.execute("SELECT name, on_project__c FROM salesforce.resource__c WHERE on_project__c = 'false' AND Employee_Status__c = 'Active'")
@@ -228,10 +247,12 @@ def botprogram():
                         for row in rows:
                             temp_string = temp_string + str(row[0]) + '\n'
                         post(Resource[index].user_id,temp_string)
-                else: #if the response does not contain any known terms
+                elif Resource[index].approved: #if the response does not contain any known terms
                     post(Resource[index].user_id,"I didn't quite understand that. I will be posting this to my database to learn from at a later stage.")
                     cur.execute("INSERT INTO salesforce.new__c (New_Headline__c,News_Text__c) VALUES ('%s', '%s')" % (str('Unrecognised post by: ' + name),text.replace("'", "")))
                     con.commit()
+                else:
+                    post(Resource[index].user_id,"You're telegram account has not been approved yet. As a result, you cannot access any information via this bot. Please contact your manager to get your account aproved.")
 
         except TypeError: #if an error is caused, delete the telegram user from the Resources object and then loop back to the 'Receive message loop'. Don't increment the offset variable so the previously received message is recieved again so that a new resource record can be created for the user in RAM and on Salesforce.
             print str(Resource[index].user_id + " " + Resource[index].name)
