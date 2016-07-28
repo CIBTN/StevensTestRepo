@@ -118,13 +118,6 @@ def botprogram():
                 if str(Resource[i].user_id) == str(user_id): #if the user id of the resource from the Resource array is equal to the user id of the current telegram user
                     index = i #set the index variable equal the index of the resource in the Resource array
                     print 'from old user'
-                elif str(Resource[i].name) == str(name): #if the name of the resource from the Resource array is equal to the name of the current telegram user (User's name was loaded from Salesforce but not their Telegram I.D)
-                    index = i #set the index variable equal the index of the resource in the Resource array
-                    Resource[i].user_id = user_id #set the resource user id equal the user id of the current telegram user
-                    cur.execute("UPDATE salesforce.resource__c SET telegram_user_id__c = '%s' WHERE name = '%s'" % (user_id, name)) #update Salesforce to include the resource's telegram id on their record
-                    con.commit() #commit the previous SQL query to the Postgres database
-                    print 'from old user with no telegram id'
-                    print 'telegram id updated in Salesforce'
 
         if index == -1: #if the telegram user does not have an associated resource object in the Resource array, their index is defaulted to -1
             try:
@@ -137,13 +130,26 @@ def botprogram():
                     print 'from user who is on Salesforce but has not been approved yet'
                     print str('adding ' + str(Resource[index].name) + ' to RAM')
             except TypeError:
-                Resource.append(resource(user_id,name)) #a new resource object is created and appended to the Resource array
-                index = len(Resource)-1 #The index variable is set to the index of the new resource in the Resourece array
-                Resource[index].approved = 0
-                cur.execute("INSERT INTO salesforce.resource__c (telegram_user_id__c,name,Employee_Status__c) VALUES ('%s', '%s','Active')" % (user_id, name)) #A new resource record is created on Salesforce
-                con.commit()
-                print 'from new user'
-                print str('adding ' + str(Resource[index].name) + ' to RAM')
+                try:
+                    cur.execute("SELECT name FROM salesforce.resource__c WHERE name = '%s'" % (name))
+                    query_result = cur.fetchone()
+                    if query_result[0] == str(name):
+                        Resource.append(resource(user_id,name))
+                        index = len(Resource)-1
+                        Resource[index].approved = 0
+                        print 'from user who is on Salesforce but does not have a telegram_id and has not been approved yet'
+                        print str('adding ' + str(Resource[index].name) + ' to RAM')
+                        cur.execute("UPDATE salesforce.resource__c SET telegram_user_id__c = '%s' WHERE name = '%s'" % (user_id, name)) #update Salesforce to include the resource's telegram id on their record
+                        con.commit() #commit the previous SQL query to the Postgres database
+                        print 'telegram id updated in Salesforce'
+                except TypeError:
+                    Resource.append(resource(user_id,name)) #a new resource object is created and appended to the Resource array
+                    index = len(Resource)-1 #The index variable is set to the index of the new resource in the Resourece array
+                    Resource[index].approved = 0
+                    cur.execute("INSERT INTO salesforce.resource__c (telegram_user_id__c,name,Employee_Status__c) VALUES ('%s', '%s','Active')" % (user_id, name)) #A new resource record is created on Salesforce
+                    con.commit()
+                    print 'from new user'
+                    print str('adding ' + str(Resource[index].name) + ' to RAM')
 
 
         cur.execute("SELECT telegram_user_id__c, awaiting_schedule_response__c, on_project__c FROM salesforce.resource__c WHERE telegram_user_id__c = '%s'" % (Resource[index].user_id)) #Read the telegram_user_id, awaiting_schedule_response check box and on_project check box for the current telegram user from Salesforce
