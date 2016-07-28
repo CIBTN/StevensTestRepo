@@ -137,6 +137,7 @@ def botprogram():
                     except TypeError:
                         pass
 
+        print Resource
 
         if index == -1: #if the telegram user does not have an associated resource object in the Resource array, their index is defaulted to -1
             Resource.append(resource(user_id,name)) #a new resource object is created and appended to the Resource array
