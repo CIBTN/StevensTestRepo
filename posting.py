@@ -1,4 +1,4 @@
-from telegramAPI import get,post,keyb
+from telegramAPI import get,post,keyb,keybHide
 from resource import resource
 import json
 import sys
